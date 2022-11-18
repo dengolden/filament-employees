@@ -18,12 +18,17 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\EmployeeResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\EmployeeResource\RelationManagers;
+use App\Filament\Resources\EmployeeResource\Widgets\EmployeeStatsOverview;
+use App\Models\city;
+use App\Models\country;
+use App\Models\state;
+use Nette\Utils\Callback;
 
 class EmployeeResource extends Resource
 {
     protected static ?string $model = Employee::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-collection';
+    protected static ?string $navigationIcon = 'heroicon-o-identification';
 
     public static function form(Form $form): Form
     {
@@ -32,17 +37,40 @@ class EmployeeResource extends Resource
                 Card::make()
                     ->schema([
                         Select::make('country_id')
-                            ->relationship('country', 'name')->required(),
+                            ->label('Country')
+                            ->options(country::all()->pluck('name', 'id')->toArray())
+                            ->required()
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $set) => $set('state_id', null)),
                         Select::make('state_id')
-                            ->relationship('state', 'name')->required(),
+                            ->label('State')
+                            ->required()
+                            ->options(function (callable $get){
+                                $country = Country::find($get('country_id'));
+                                if(!$country){
+                                    return state::all()->pluck('name', 'id');
+                                }
+                                return $country->states->pluck('name', 'id');
+                            })
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $set) => $set('city_id', null)),
                         Select::make('city_id')
-                            ->relationship('city', 'name')->required(),
+                            ->label('City')
+                            ->required()
+                            ->options(function (callable $get){
+                                $state = state::find($get('state_id'));
+                                if(!$state){
+                                    return city::all()->pluck('name', 'id');
+                                }
+                                return $state->cities->pluck('name', 'id');
+                            })
+                            ->reactive(),
                         Select::make('department_id')
                             ->relationship('department', 'name')->required(),
-                        TextInput::make('first_name')->required(),
-                        TextInput::make('last_name')->required(),
-                        TextInput::make('address')->required(),
-                        TextInput::make('zip_code')->required(),
+                        TextInput::make('first_name')->required()->maxLength(255),
+                        TextInput::make('last_name')->required()->maxLength(255),
+                        TextInput::make('address')->required()->maxLength(255),
+                        TextInput::make('zip_code')->required()->maxLength(5),
                         DatePicker::make('birth_date')->required(),
                         DatePicker::make('date_hired')->required()
 
@@ -79,6 +107,15 @@ class EmployeeResource extends Resource
             //
         ];
     }
+
+    Public Static Function getWidgets(): array
+    {
+        return [
+            EmployeeStatsOverview::class
+        ];
+    }
+
+
     
     public static function getPages(): array
     {

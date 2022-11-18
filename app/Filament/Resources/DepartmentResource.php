@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Resources\CityResource\RelationManagers\EmployeesRelationManager;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Department;
@@ -15,12 +16,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\DepartmentResource\Pages;
 use App\Filament\Resources\DepartmentResource\RelationManagers;
+use App\Filament\Resources\DepartmentResource\RelationManagers\EmployeesRelationManager as RelationManagersEmployeesRelationManager;
 
 class DepartmentResource extends Resource
 {
     protected static ?string $model = Department::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-collection';
+    protected static ?string $navigationIcon = 'heroicon-o-briefcase';
+    protected static ?string $navigationGroup = 'System Management';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -29,6 +33,8 @@ class DepartmentResource extends Resource
                 Card::make()
                     ->schema([
                         TextInput::make('name')
+                            ->required()
+                            ->maxLength(255)
                     ])
             ]);
     }
@@ -55,7 +61,7 @@ class DepartmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagersEmployeesRelationManager::class
         ];
     }
     
